@@ -237,7 +237,20 @@ public class WorldGuardPlugin extends JavaPlugin {
             setupCustomCharts(metrics);
         }
 
-        Bukkit.getScheduler().runTaskTimerAsynchronously(this, new PlayerMoveListener(this), 0L, 5L);
+        PlayerMoveListener movePoller = new PlayerMoveListener(this);
+        if (isFolia()) {
+            // On Folia a player entity may only be read from its owning region
+            // thread, so the global tick fans out to each player's scheduler and
+            // does the location read + move test there. The map inside the
+            // listener is concurrent to tolerate the parallel ticks.
+            Bukkit.getGlobalRegionScheduler().runAtFixedRate(this, task -> {
+                for (Player player : Bukkit.getOnlinePlayers()) {
+                    player.getScheduler().run(this, t -> movePoller.tick(player), null);
+                }
+            }, 1L, 5L);
+        } else {
+            Bukkit.getGlobalRegionScheduler().runAtFixedRate(this, task -> movePoller.run(), 1L, 5L);
+        }
 
     }
 

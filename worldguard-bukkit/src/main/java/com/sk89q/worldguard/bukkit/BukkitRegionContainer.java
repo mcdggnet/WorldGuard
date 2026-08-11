@@ -67,21 +67,21 @@ public class BukkitRegionContainer extends RegionContainer {
         Bukkit.getPluginManager().registerEvents(new Listener() {
             @EventHandler
             public void onWorldLoad(WorldLoadEvent event) {
-                Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                Bukkit.getAsyncScheduler().runNow(plugin, task -> {
                     load(BukkitAdapter.adapt(event.getWorld()));
                 });
             }
 
             @EventHandler
             public void onWorldUnload(WorldUnloadEvent event) {
-                Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                Bukkit.getAsyncScheduler().runNow(plugin, task -> {
                     unload(BukkitAdapter.adapt(event.getWorld()));
                 });
             }
 
             @EventHandler
             public void onChunkLoad(ChunkLoadEvent event) {
-                Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                Bukkit.getAsyncScheduler().runNow(plugin, task -> {
                     RegionManager manager = get(BukkitAdapter.adapt(event.getWorld()));
                     if (manager != null) {
                         Chunk chunk = event.getChunk();
@@ -92,7 +92,7 @@ public class BukkitRegionContainer extends RegionContainer {
 
             @EventHandler
             public void onChunkUnload(ChunkUnloadEvent event) {
-                Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                Bukkit.getAsyncScheduler().runNow(plugin, task -> {
                     RegionManager manager = get(BukkitAdapter.adapt(event.getWorld()));
                     if (manager != null) {
                         Chunk chunk = event.getChunk();
@@ -129,7 +129,7 @@ public class BukkitRegionContainer extends RegionContainer {
             manager = container.load(world.getName());
 
             if (manager != null) {
-                Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                Bukkit.getAsyncScheduler().runNow(plugin, task -> {
                     List<BlockVector2> positions = new ArrayList<>();
                     for (Chunk chunk : ((BukkitWorld) world).getWorld().getLoadedChunks()) {
                         positions.add(BlockVector2.at(chunk.getX(), chunk.getZ()));

@@ -59,12 +59,12 @@ public class BukkitSessionManager extends AbstractSessionManager implements Runn
                 }, null);
             }
         } else {
-            Bukkit.getScheduler().runTaskAsynchronously(WorldGuardPlugin.inst(), () -> {
+            Bukkit.getAsyncScheduler().runNow(WorldGuardPlugin.inst(), task -> {
                 for (Player player : players) {
                     BukkitPlayer bukkitPlayer = new BukkitPlayer(WorldGuardPlugin.inst(), player);
                     Session session = getIfPresent(bukkitPlayer);
                     if (session != null) {
-                        Bukkit.getScheduler().runTaskAsynchronously(WorldGuardPlugin.inst(), () -> session.resetState(bukkitPlayer));
+                        Bukkit.getAsyncScheduler().runNow(WorldGuardPlugin.inst(), t -> session.resetState(bukkitPlayer));
                     }
                 }
             });
@@ -80,7 +80,7 @@ public class BukkitSessionManager extends AbstractSessionManager implements Runn
                 get(player).initialize(player);
             }, null);
         } else {
-            Bukkit.getScheduler().runTaskAsynchronously(WorldGuardPlugin.inst(), () -> {
+            Bukkit.getAsyncScheduler().runNow(WorldGuardPlugin.inst(), task -> {
                 LocalPlayer player = WorldGuardPlugin.inst().wrapPlayer(event.getPlayer());
                 get(player).initialize(player);
             });
@@ -97,12 +97,12 @@ public class BukkitSessionManager extends AbstractSessionManager implements Runn
                 }, null);
             }
         } else {
-            Bukkit.getScheduler().runTaskAsynchronously(WorldGuardPlugin.inst(), () -> {
+            Bukkit.getAsyncScheduler().runNow(WorldGuardPlugin.inst(), task -> {
                 for (Player player : Bukkit.getServer().getOnlinePlayers()) {
                     LocalPlayer localPlayer = WorldGuardPlugin.inst().wrapPlayer(player);
                     Session session = get(localPlayer);
 
-                    Bukkit.getScheduler().runTaskAsynchronously(WorldGuardPlugin.inst(), () -> session.tick(localPlayer));
+                    Bukkit.getAsyncScheduler().runNow(WorldGuardPlugin.inst(), t -> session.tick(localPlayer));
                 }
             });
         }
@@ -133,13 +133,13 @@ public class BukkitSessionManager extends AbstractSessionManager implements Runn
                     }, null);
                 }
             } else {
-                Bukkit.getScheduler().runTaskAsynchronously(WorldGuardPlugin.inst(), () -> {
+                Bukkit.getAsyncScheduler().runNow(WorldGuardPlugin.inst(), task -> {
                     for (Player player : Bukkit.getServer().getOnlinePlayers()) {
                         LocalPlayer localPlayer = WorldGuardPlugin.inst().wrapPlayer(player);
                         Session session = get(localPlayer);
 
                         if (WorldGuardPlugin.inst().isEnabled()) {
-                            Bukkit.getScheduler().runTaskAsynchronously(WorldGuardPlugin.inst(), () -> session.uninitialize(localPlayer));
+                            Bukkit.getAsyncScheduler().runNow(WorldGuardPlugin.inst(), t -> session.uninitialize(localPlayer));
                         }
                     }
                 });

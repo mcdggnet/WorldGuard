@@ -52,7 +52,7 @@ public class WorldGuardVehicleListener extends AbstractListener {
         org.bukkit.Location from = event.getFrom();
         org.bukkit.Location to = event.getTo();
 
-        Bukkit.getScheduler().runTaskAsynchronously(getPlugin(), () -> {
+        Bukkit.getAsyncScheduler().runNow(getPlugin(), task -> {
             List<Player> playerPassengers = vehicle.getPassengers().stream()
                     .filter(ent -> ent instanceof Player).map(ent -> (Player) ent).toList();
 
@@ -83,7 +83,7 @@ public class WorldGuardVehicleListener extends AbstractListener {
                                     player.teleportAsync(BukkitAdapter.adapt(lastValid).setDirection(dir));
                                 }
                             } else {
-                                Bukkit.getScheduler().runTask(getPlugin(), () -> {
+                                vehicle.getScheduler().run(getPlugin(), regionTask -> {
                                     vehicle.setVelocity(new Vector(0, 0, 0));
                                     vehicle.teleportAsync(from);
 
@@ -91,7 +91,7 @@ public class WorldGuardVehicleListener extends AbstractListener {
                                         Vector dir = player.getLocation().getDirection();
                                         player.teleportAsync(BukkitAdapter.adapt(lastValid).setDirection(dir));
                                     }
-                                });
+                                }, null);
                             }
                             return;
                         }

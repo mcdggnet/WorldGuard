@@ -39,17 +39,19 @@ import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.vehicle.VehicleEnterEvent;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.util.Vector;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class PlayerMoveListener extends AbstractListener implements Runnable {
 
+    // Concurrent: on Folia the poller hops onto each player's own region thread
+    // (see WorldGuardPlugin), so this map is touched from many threads at once.
     private final Map<UUID, Location> lastPlayerLocations;
 
     public PlayerMoveListener(WorldGuardPlugin plugin) {
         super(plugin);
-        this.lastPlayerLocations = new HashMap<>();
+        this.lastPlayerLocations = new ConcurrentHashMap<>();
     }
 
     @Override
@@ -84,7 +86,13 @@ public class PlayerMoveListener extends AbstractListener implements Runnable {
 
     @Override
     public void run() {
-        Bukkit.getOnlinePlayers().forEach(player -> {
+        // Paper: iterate on the calling (global) thread. On Folia the plugin
+        // schedules tick(player) on each player's own region thread instead, so
+        // that player.getLocation() is always read from the owning thread.
+        Bukkit.getOnlinePlayers().forEach(this::tick);
+    }
+
+    public void tick(Player player) {
             Location from = lastPlayerLocations.getOrDefault(player.getUniqueId(), player.getLocation());
             Location to = player.getLocation().clone();
 
@@ -114,7 +122,7 @@ public class PlayerMoveListener extends AbstractListener implements Runnable {
             if (getPlugin().isFolia()) {
                 player.teleportAsync(override.clone());
             } else {
-                Bukkit.getScheduler().runTask(getPlugin(), () -> player.teleportAsync(override.clone()));
+                player.getScheduler().run(getPlugin(), t -> player.teleportAsync(override.clone()), null);
             }
 
             if (getPlugin().isFolia()) {
@@ -138,7 +146,7 @@ public class PlayerMoveListener extends AbstractListener implements Runnable {
                     player.teleportAsync(override.clone().add(0, 1, 0));
                 }
             } else {
-                Bukkit.getScheduler().runTask(getPlugin(), () -> {
+                player.getScheduler().run(getPlugin(), t -> {
                     Entity vehicle = player.getVehicle();
                     if (vehicle != null) {
                         vehicle.eject();
@@ -158,7 +166,7 @@ public class PlayerMoveListener extends AbstractListener implements Runnable {
 
                         player.teleportAsync(override.clone().add(0, 1, 0));
                     }
-                });
+                }, null);
             }
 
                 Location delayedDismountLocation = override.clone().add(0, 1, 0);
@@ -166,13 +174,12 @@ public class PlayerMoveListener extends AbstractListener implements Runnable {
                     player.getScheduler().runDelayed(getPlugin(), scheduledTask -> player.teleportAsync(delayedDismountLocation),
                         null, 1);
                 } else {
-                    Bukkit.getScheduler().runTaskLater(getPlugin(), () -> player.teleportAsync(delayedDismountLocation), 1);
+                    player.getScheduler().runDelayed(getPlugin(), t -> player.teleportAsync(delayedDismountLocation), null, 1L);
                 }
             }
         }
 
             lastPlayerLocations.put(player.getUniqueId(), to);
-        });
     }
 
     @EventHandler

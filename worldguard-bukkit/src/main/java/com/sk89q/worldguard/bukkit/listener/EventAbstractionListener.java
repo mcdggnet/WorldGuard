@@ -1099,8 +1099,8 @@ public class EventAbstractionListener extends AbstractListener {
                     Bukkit.getRegionScheduler().run(getPlugin(), hopper.getLocation(),
                             (scheduledTask) -> hopper.getBlock().breakNaturally());
                 } else {
-                    Bukkit.getScheduler().scheduleSyncDelayedTask(getPlugin(),
-                            () -> hopper.getBlock().breakNaturally());
+                    Bukkit.getRegionScheduler().runDelayed(getPlugin(), hopper.getLocation(),
+                            scheduledTask -> hopper.getBlock().breakNaturally(), 1L);
                 }
             } else {
                 entry.setCancelled(event.isCancelled());
