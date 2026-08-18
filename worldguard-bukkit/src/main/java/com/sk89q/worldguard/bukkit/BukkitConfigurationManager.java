@@ -97,16 +97,24 @@ public class BukkitConfigurationManager extends YamlConfigurationManager {
 
     public BukkitWorldConfiguration get(String worldName) {
         BukkitWorldConfiguration config = worlds.get(worldName);
-        BukkitWorldConfiguration newConfig = null;
-
-        while (config == null) {
-            if (newConfig == null) {
-                newConfig = new BukkitWorldConfiguration(plugin, worldName, this.getConfig());
+        if (config == null) {
+            // mcdgg/Folia: worlds load CONCURRENTLY on region threads, and
+            // BukkitWorldConfiguration's constructor both reads and WRITES
+            // yaml through the shared global YAMLProcessor. Upstream's
+            // lock-free putIfAbsent dance still lets two loading worlds run
+            // the constructor at once — they interleave inside snakeyaml
+            // (Node.getNodeId NPE on WorldLoadEvent) and can corrupt
+            // config.yml on disk with anchor/complex-key garbage, which then
+            // fails the NEXT boot ("aliases ... exceeds the specified max").
+            // Both happened 2026-08-18; serialize creation instead.
+            synchronized (this) {
+                config = worlds.get(worldName);
+                if (config == null) {
+                    config = new BukkitWorldConfiguration(plugin, worldName, this.getConfig());
+                    worlds.put(worldName, config);
+                }
             }
-            worlds.putIfAbsent(worldName, newConfig);
-            config = worlds.get(worldName);
         }
-
         return config;
     }
 
